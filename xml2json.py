@@ -51,10 +51,13 @@ def strip_tag(tag):
     return tag
 
 
-def elem_to_internal(elem, strip_ns=1, strip=1):
+def elem_to_internal(elem, strip_ns=1, strip=1, ordered=0):
     """Convert an Element into an internal dictionary (not JSON!)."""
-
-    d = {}
+    if ordered:
+        from collections import OrderedDict
+        d = OrderedDict()
+    else:
+        d = {}
     elem_tag = elem.tag
     if strip_ns:
         elem_tag = strip_tag(elem.tag)
@@ -144,7 +147,7 @@ def internal_to_elem(pfsh, factory=ET.Element):
     return e
 
 
-def elem2json(elem, options, strip_ns=1, strip=1):
+def elem2json(elem, options, strip_ns=1, strip=1, ordered=0):
 
     """Convert an ElementTree or Element into a JSON string."""
 
@@ -152,9 +155,12 @@ def elem2json(elem, options, strip_ns=1, strip=1):
         elem = elem.getroot()
 
     if options.pretty:
-        return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip), sort_keys=True, indent=4, separators=(',', ': '))
+        if options.ordered:
+            return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip, ordered=1), sort_keys=False, indent=4, separators=(',', ': '))
+        else:
+            return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip, ordered=ordered), sort_keys=True, indent=4, separators=(',', ': '))
     else:
-        return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip))
+        return json.dumps(elem_to_internal(elem, strip_ns=strip_ns, strip=strip, ordered=ordered))
 
 
 def json2elem(json_data, factory=ET.Element):
@@ -169,12 +175,12 @@ def json2elem(json_data, factory=ET.Element):
     return internal_to_elem(json.loads(json_data), factory)
 
 
-def xml2json(xmlstring, options, strip_ns=1, strip=1):
+def xml2json(xmlstring, options, strip_ns=1, strip=1, ordered=0):
 
     """Convert an XML string into a JSON string."""
 
     elem = ET.fromstring(xmlstring)
-    return elem2json(elem, options, strip_ns=strip_ns, strip=strip)
+    return elem2json(elem, options, strip_ns=strip_ns, strip=strip, ordered=ordered)
 
 
 def json2xml(json_data, factory=ET.Element):
@@ -212,6 +218,9 @@ def main():
     p.add_option(
         '--strip_newlines', action="store_true",
         dest="strip_nl", help="Strip newlines for xml2json")
+    p.add_option(
+        '--ordered', action="store_true",
+        dest="ordered", help="Maintain XML field order in JSON")
     options, arguments = p.parse_args()
 
     inputstream = sys.stdin
@@ -227,14 +236,17 @@ def main():
 
     strip = 0
     strip_ns = 0
+    ordered = 0
     if options.strip_text:
         strip = 1
     if options.strip_ns:
         strip_ns = 1
+    if options.ordered:
+        ordered = 1
     if options.strip_nl:
         input = input.replace('\n', '').replace('\r','')
     if (options.type == "xml2json"):
-        out = xml2json(input, options, strip_ns, strip)
+        out = xml2json(input, options, strip_ns, strip, ordered)
     else:
         out = json2xml(input)
 
