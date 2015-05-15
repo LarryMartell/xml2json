@@ -67,7 +67,7 @@ def elem_to_internal(elem, strip_ns=1, strip=1, ordered=0):
 
     # loop over subelements to merge them
     for subelem in elem:
-        v = elem_to_internal(subelem, strip_ns=strip_ns, strip=strip)
+        v = elem_to_internal(subelem, strip_ns=strip_ns, strip=strip, ordered=ordered)
 
         tag = subelem.tag
         if strip_ns:
